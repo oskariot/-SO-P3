@@ -4,7 +4,6 @@ Jako P3 chciałbym w miarę możliwości zrobić bardziej skomplikowany problem 
 Po przeszukaniu Internetu w poszukiwaniu trudnych problemów synchronizacji natrafiłem na następujący problem:
 
 ## River Crossing
-
 ```
 A particular river crossing is shared by both Linux hackers and Microsoft employees. A boat is used to cross
 the river, but it only seats four people, and must always carry a full load. In order to guarantee the safety
@@ -20,3 +19,5 @@ methods should not return until after RowBoat() has been called for the boatload
 (again, don't worry about starvation), and there should be no busy-waiting and no undue waiting (hackers 
 and employees should not wait if there are enough of them for a safe boatload).
 ```
+
+W przypadku, gdy uzna pan, że temat nie nadaje się na pracownię P3, chciałbym wybrać temat powłoki, który wysłał pan jako propozycję i którego opis znajduje się pod adresem: http://pages.cs.wisc.edu/~dusseau/Classes/CS537-F07/Projects/P1/p1.html.
