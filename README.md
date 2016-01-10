@@ -1,9 +1,11 @@
 # -SO-P3
 
-Jako P3 chciałbym w miarę możliwości zrobić bardziej skomplikowany problem synchronizacji.
+Jako P3 chciałbym w miarę możliwości zrobić bardziej skomplikowany problem synchronizacji (rozwinięcie P2).
 Po przeszukaniu Internetu w poszukiwaniu trudnych problemów synchronizacji natrafiłem na następujący problem:
+
+## River Crossing
+
 ```
-River Crossing
 A particular river crossing is shared by both Linux hackers and Microsoft employees. A boat is used to cross
 the river, but it only seats four people, and must always carry a full load. In order to guarantee the safety
 of the hackers, you cannot put three employees and one hacker in the same boat; similarly, you cannot put 
