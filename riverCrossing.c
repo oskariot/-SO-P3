@@ -2,17 +2,19 @@
 #include <pthread.h>
 #include <stdlib.h>
 
-#define true 0
-#define false 1
+#define true 1
+#define false 0
 
 int waitingLinHackers, waitingWindowsers; // dzielone zmienne
 int boarding;
 int inBoat;
 
-pthread_t Programmers[10];
-pthread_mutex_t mainLock; // lock dla waitingLinHackers/Windowsers
+pthread_t Programmers[12];
+pthread_mutex_t mainLock; // lock dla: waitingLinHackers/Windowsers, boarding
 pthread_cond_t linHackerCanBoat;
 pthread_cond_t windowserCanBoat;
+pthread_cond_t boardingDone;
+pthread_cond_t readyToRow;
 
 void boatAndRow(int);
 void boatBoard(int);
@@ -31,16 +33,19 @@ int main()
   waitingLinHackers = 0;
   waitingWindowsers = 0;
   boarding = false;
+  inBoat = 0;
 
   // inicjowanie zmiennych POSIX-owych
   pthread_mutex_init(&mainLock, NULL);
   pthread_cond_init(&linHackerCanBoat, NULL);
   pthread_cond_init(&windowserCanBoat, NULL);
+  pthread_cond_init(&boardingDone, NULL);
+  pthread_cond_init(&readyToRow, NULL);
 
   int tret; // wartość zwracana przez różne pthread_funkcja()
 
   // startowanie wątków
-  for (int i = 0; i < 10; i++)
+  for (int i = 0; i < 12; i++)
   {
     int * id = malloc(sizeof(int));
     *id = i;
@@ -63,18 +68,20 @@ int main()
   }
 
   // kończenie wątków
-  for (int i = 0; i < 10; i++)
-  if (tret = pthread_join(Programmers[i], NULL))
-  {
-    fprintf(stderr, "Error from pthread_join(). Returned %i instead of 0.", tret); // wyświetlanie kodu błędu
-    exit(EXIT_FAILURE);
-    printf("hello!2\n");
-  }
+  for (int i = 0; i < 12; i++)
+    if (tret = pthread_join(Programmers[i], NULL))
+    {
+      fprintf(stderr, "Error from pthread_join(). Returned %i instead of 0.", tret); // wyświetlanie kodu błędu
+      exit(EXIT_FAILURE);
+      printf("hello!2\n");
+    }
 
   // destrukcja zmiennych POSIX-owych
   pthread_mutex_destroy(&mainLock);
   pthread_cond_destroy(&linHackerCanBoat);
   pthread_cond_destroy(&windowserCanBoat);
+  pthread_cond_destroy(&boardingDone);
+  pthread_cond_destroy(&readyToRow);
   return 0;
 }
 
