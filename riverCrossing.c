@@ -10,7 +10,7 @@ pthread_mutex_t Lock; // lock założony w celu korzystania z dzielonych zmienny
 pthread_cond_t linHackerCanBoat;
 pthread_cond_t windowserCanBoat;
 
-void rowBoat(int);
+void boatAndRow(int);
 void boatBoard(int);
 // generator_hackerów()
 // generator_windowsów()
@@ -74,70 +74,104 @@ int main()
   return 0;
 }
 
-void linHackerArrives()
+void * linHackerArrives(void * args)
 {
+  int id = *((int *)args);
+  free(args);
+  // pthread_cond_wait(&Lock);
   // sekcja krytyczna, użycie zmiennych globalnych waitingLinHackers i waitingWindowsers
   pthread_mutex_lock(&Lock);
+  printf("Hey I'm linux hacker %d!\n", id);
   if (waitingLinHackers == 3)
   {
+    printf("Me[%d] Found 3 other linux hackers! Let's board!\n", id);
     pthread_cond_signal(&linHackerCanBoat); // wybudzenie 1 hakera
     pthread_cond_signal(&linHackerCanBoat); // wybudzenie 1 hakera
     pthread_cond_signal(&linHackerCanBoat); // wybudzenie 1 hakera
     waitingLinHackers -= 3; // aktualizacja zmiennej
-    rowBoat();
+    boatAndRow(id);
+    printState();
   }
   else if (waitingLinHackers >= 1 && waitingWindowsers >= 2)
   {
+    printf("Me[%d] Found 1 other linux hacker and 2 windowsers. Let's board!\n", id);
     pthread_cond_signal(&linHackerCanBoat); // wybudzenie 1 hakera
     pthread_cond_signal(&windowserCanBoat); // wybudzenia 1 windowsera
     pthread_cond_signal(&windowserCanBoat); // wybudzenie 1 windowsera
     waitingLinHackers--; // aktualizacja zmiennej
     waitingWindowsers -= 2; // aktualizacja zmiennej
+    boatAndRow(id);
+    printState();
   }
   else
   {
     waitingLinHackers++;
+    printf("Linux hacker %d waiting!\n", id);
+    printState();
     pthread_cond_wait(&linHackerCanBoat, &Lock);
   }
-  boatBoard();
+  boatBoard(id);
   pthread_mutex_unlock(&Lock);
 }
 
-void windowserArrives()
+void * windowserArrives(void * args)
 {
+  int id = *((int *)args);
+  free(args);
   // sekcja krytyczna, użycie zmiennych globalnych waitingLinHackers i waitingWindowsers
   pthread_mutex_lock(&Lock);
+  printf("Hey I'm windowser %d!\n", id);
   if (waitingWindowsers == 3)
   {
+    printf("Me[%d] Found 3 other windowsers! Let's board!\n", id);
     pthread_cond_signal(&windowserCanBoat); // wybudzenie 1 windowsera
     pthread_cond_signal(&windowserCanBoat); // wybudzenie 1 windowsera
     pthread_cond_signal(&windowserCanBoat); // wybudzenie 1 windowsera
     waitingWindowsers -= 3; // aktualizacja zmiennej
-    rowBoat();
+    // czekaj aż wsiądą do łódki
+    boatAndRow(id); // + return
+    printState();
   }
   else if (waitingWindowsers >= 1 && waitingLinHackers >= 2)
   {
+    printf("Me[%d] Found 1 other windowsers and 2 hackers. Let's board!\n", id);
     pthread_cond_signal(&windowserCanBoat); // wybudzenie 1 windowsera
     pthread_cond_signal(&linHackerCanBoat); // wybudzenia 1 hackera
     pthread_cond_signal(&linHackerCanBoat); // wybudzenie 1 hackera
     waitingWindowsers--; // aktualizacja zmiennej
     waitingLinHackers -= 2; // aktualizacja zmiennej
+    // czekaj aż wsiądą do łódki
+    boatAndRow(id); // + return
+    printState();
   }
   else
   {
     waitingWindowsers++;
+    printf("Windowser %d waiting!\n", id);
+    printState();
     pthread_cond_wait(&windowserCanBoat, &Lock);
   }
-  boatBoard();
+  boatBoard(id);
   pthread_mutex_unlock(&Lock);
 }
-void rowBoat()
+
+void printState()
 {
-  printf("The boat has left the dock");
-  // blokada semafora na wsiadanie do łódki
+  printf("waiting hackers: %d, waiting windowsers: %d\n", waitingLinHackers, waitingWindowsers);
 }
 
-void boatBoard()
+void boatAndRow(int id)
 {
-  printf("I'm in!");
+  printf("%d: The boat has left the dock! ", id);
+  // wsiądź i odepchnij łódkę
+  // broadcast do czekającyh na przystani, że mogą się szykować
+}
+
+void boatBoard(int id)
+{
+  // weź lock
+  // zwiększ liczbę w łódce
+  // sprawdź czy == 3, jeśli tak, obudź odpychającego
+  // zdejmij lock
+  printf("%d is in!\n", id);
 }
