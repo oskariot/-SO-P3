@@ -4,23 +4,67 @@
 #include <stdlib.h>
 
 int waitingLinHackers, waitingWindowsers; // dzielone zmienne
+
+pthread_t Programmers[10];
 pthread_mutex_t Lock; // lock założony w celu korzystania z dzielonych zmiennych
 pthread_cond_t linHackerCanBoat;
 pthread_cond_t windowserCanBoat;
 
-void rowBoat();
-void boatBoard();
+void rowBoat(int);
+void boatBoard(int);
 // generator_hackerów()
 // generator_windowsów()
-void linHackerArrives();
-void windowserArrives();
+void * linHackerArrives(void * args);
+void * windowserArrives(void * args);
+
+void printState();
 
 int main()
 {
+  srand(time(NULL));
+
+  // inicjowanie zmiennych dzielonych
+  waitingLinHackers = 0;
+  waitingWindowsers = 0;
+
   // inicjowanie zmiennych POSIX-owych
   pthread_mutex_init(&Lock, NULL);
   pthread_cond_init(&linHackerCanBoat, NULL);
   pthread_cond_init(&windowserCanBoat, NULL);
+
+  int tret; // wartość zwracana przez różne pthread_funkcja()
+
+  // startowanie wątków
+  for (int i = 0; i < 10; i++)
+  {
+    int * id = malloc(sizeof(int));
+    *id = i;
+    if (rand() % 2)
+    {
+      if (tret = pthread_create(&Programmers[i], NULL, linHackerArrives, (void *)id))
+      {
+        fprintf(stderr,"Error from pthread_create(). Returned %i instead of 0.", tret); // wyświetlanie kodu błędu
+        exit(EXIT_FAILURE);
+      }
+    }
+    else
+    {
+      if (tret = pthread_create(&Programmers[i], NULL, windowserArrives, (void *)id))
+      {
+        fprintf(stderr,"Error from pthread_create(). Returned %i instead of 0.", tret); // wyświetlanie kodu błędu
+        exit(EXIT_FAILURE);
+      }
+    }
+  }
+
+  // kończenie wątków
+  for (int i = 0; i < 10; i++)
+  if (tret = pthread_join(Programmers[i], NULL))
+  {
+    fprintf(stderr, "Error from pthread_join(). Returned %i instead of 0.", tret); // wyświetlanie kodu błędu
+    exit(EXIT_FAILURE);
+    printf("hello!2\n");
+  }
 
 
   // destrukcja zmiennych POSIX-owych
