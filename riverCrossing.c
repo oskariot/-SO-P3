@@ -89,11 +89,13 @@ void * linHackerArrives(void * args)
 {
   int id = *((int *)args);
   free(args);
-  // pthread_cond_wait(&mainLock);
+  int iWillRow = false;
   // sekcja krytyczna, użycie zmiennych globalnych waitingLinHackers i waitingWindowsers
   pthread_mutex_lock(&mainLock);
+  while (boarding)
+    pthread_cond_wait(&boardingDone, &mainLock);
   printf("Hey I'm linux hacker %d!\n", id);
-  if (!boarding && waitingLinHackers == 3)
+  if (waitingLinHackers == 3)
   {
     boarding = true;
     printf("Me[%d] Found 3 other linux hackers! Let's board!\n", id);
@@ -102,10 +104,13 @@ void * linHackerArrives(void * args)
     pthread_cond_signal(&linHackerCanBoat); // wybudzenie 1 hakera
     pthread_cond_signal(&linHackerCanBoat); // wybudzenie 1 hakera
     waitingLinHackers -= 3; // aktualizacja zmiennej
-    boatAndRow(id);
+    iWillRow = true;
+
+    pthread_cond_wait(&readyToRow, &mainLock); // czekaj aż wsiądą do łódki
+
     printState();
   }
-  else if (!boarding && waitingLinHackers >= 1 && waitingWindowsers >= 2)
+  else if (waitingLinHackers >= 1 && waitingWindowsers >= 2)
   {
     boarding = true;
     printf("Me[%d] Found 1 other linux hacker and 2 windowsers. Let's board!\n", id);
@@ -114,7 +119,10 @@ void * linHackerArrives(void * args)
     pthread_cond_signal(&windowserCanBoat); // wybudzenie 1 windowsera
     waitingLinHackers--; // aktualizacja zmiennej
     waitingWindowsers -= 2; // aktualizacja zmiennej
-    boatAndRow(id);
+    iWillRow = true;
+
+    pthread_cond_wait(&readyToRow, &mainLock); // czekaj aż wsiądą do łódki
+
     printState();
   }
   else
@@ -124,7 +132,10 @@ void * linHackerArrives(void * args)
     printState();
     pthread_cond_wait(&linHackerCanBoat, &mainLock);
   }
-  boatBoard(id);
+  if (iWillRow)
+    boatAndRow(id);
+  else
+    boatBoard(id);
   pthread_mutex_unlock(&mainLock);
 }
 
@@ -132,10 +143,13 @@ void * windowserArrives(void * args)
 {
   int id = *((int *)args);
   free(args);
+  int iWillRow = false;
   // sekcja krytyczna, użycie zmiennych globalnych waitingLinHackers i waitingWindowsers
   pthread_mutex_lock(&mainLock);
+  while (boarding)
+    pthread_cond_wait(&boardingDone, &mainLock);
   printf("Hey I'm windowser %d!\n", id);
-  if (!boarding && waitingWindowsers == 3)
+  if (waitingWindowsers == 3)
   {
     boarding = true;
     printf("Me[%d] Found 3 other windowsers! Let's board!\n", id);
@@ -143,11 +157,13 @@ void * windowserArrives(void * args)
     pthread_cond_signal(&windowserCanBoat); // wybudzenie 1 windowsera
     pthread_cond_signal(&windowserCanBoat); // wybudzenie 1 windowsera
     waitingWindowsers -= 3; // aktualizacja zmiennej
-    // czekaj aż wsiądą do łódki
-    boatAndRow(id); // + return
+    iWillRow = true;
+
+    pthread_cond_wait(&readyToRow, &mainLock); // czekaj aż wsiądą do łódki
+
     printState();
   }
-  else if (!boarding && waitingWindowsers >= 1 && waitingLinHackers >= 2)
+  else if (waitingWindowsers >= 1 && waitingLinHackers >= 2)
   {
     boarding = true;
     printf("Me[%d] Found 1 other windowsers and 2 hackers. Let's board!\n", id);
@@ -156,8 +172,10 @@ void * windowserArrives(void * args)
     pthread_cond_signal(&linHackerCanBoat); // wybudzenie 1 hackera
     waitingWindowsers--; // aktualizacja zmiennej
     waitingLinHackers -= 2; // aktualizacja zmiennej
-    // czekaj aż wsiądą do łódki
-    boatAndRow(id); // + return
+    iWillRow = true;
+
+    pthread_cond_wait(&readyToRow, &mainLock); // czekaj aż wsiądą do łódki
+
     printState();
   }
   else
@@ -167,7 +185,10 @@ void * windowserArrives(void * args)
     printState();
     pthread_cond_wait(&windowserCanBoat, &mainLock);
   }
-  boatBoard(id);
+  if (iWillRow)
+    boatAndRow(id);
+  else
+    boatBoard(id);
   pthread_mutex_unlock(&mainLock);
 }
 
@@ -178,17 +199,18 @@ void printState()
 
 void boatAndRow(int id)
 {
-  printf("%d: The boat has left the dock! ", id);
   // wsiądź i odepchnij łódkę
-  // broadcast do czekającyh na przystani, że mogą się szykować
+  boarding = false;
+  inBoat = 0;
+  printf("%d: The boat has left the dock! ", id);
+  pthread_cond_broadcast(&boardingDone);
   // odblokuj lock
 }
 
 void boatBoard(int id)
 {
-  // weź lock
-  // zwiększ liczbę w łódce
-  // sprawdź czy == 3, jeśli tak, obudź odpychającego
-  // zdejmij lock
+  inBoat++;
+  if (inBoat == 3)
+    pthread_cond_signal(&readyToRow);
   printf("%d is in!\n", id);
 }
