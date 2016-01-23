@@ -1,12 +1,16 @@
 #include <stdio.h>
 #include <pthread.h>
-#include <semaphore.h>
 #include <stdlib.h>
 
+#define true 0
+#define false 1
+
 int waitingLinHackers, waitingWindowsers; // dzielone zmienne
+int boarding;
+int inBoat;
 
 pthread_t Programmers[10];
-pthread_mutex_t Lock; // lock założony w celu korzystania z dzielonych zmiennych
+pthread_mutex_t mainLock; // lock dla waitingLinHackers/Windowsers
 pthread_cond_t linHackerCanBoat;
 pthread_cond_t windowserCanBoat;
 
@@ -26,9 +30,10 @@ int main()
   // inicjowanie zmiennych dzielonych
   waitingLinHackers = 0;
   waitingWindowsers = 0;
+  boarding = false;
 
   // inicjowanie zmiennych POSIX-owych
-  pthread_mutex_init(&Lock, NULL);
+  pthread_mutex_init(&mainLock, NULL);
   pthread_cond_init(&linHackerCanBoat, NULL);
   pthread_cond_init(&windowserCanBoat, NULL);
 
@@ -66,9 +71,8 @@ int main()
     printf("hello!2\n");
   }
 
-
   // destrukcja zmiennych POSIX-owych
-  pthread_mutex_destroy(&Lock);
+  pthread_mutex_destroy(&mainLock);
   pthread_cond_destroy(&linHackerCanBoat);
   pthread_cond_destroy(&windowserCanBoat);
   return 0;
@@ -78,13 +82,15 @@ void * linHackerArrives(void * args)
 {
   int id = *((int *)args);
   free(args);
-  // pthread_cond_wait(&Lock);
+  // pthread_cond_wait(&mainLock);
   // sekcja krytyczna, użycie zmiennych globalnych waitingLinHackers i waitingWindowsers
-  pthread_mutex_lock(&Lock);
+  pthread_mutex_lock(&mainLock);
   printf("Hey I'm linux hacker %d!\n", id);
-  if (waitingLinHackers == 3)
+  if (!boarding && waitingLinHackers == 3)
   {
+    boarding = true;
     printf("Me[%d] Found 3 other linux hackers! Let's board!\n", id);
+    // zaczynamy boarding
     pthread_cond_signal(&linHackerCanBoat); // wybudzenie 1 hakera
     pthread_cond_signal(&linHackerCanBoat); // wybudzenie 1 hakera
     pthread_cond_signal(&linHackerCanBoat); // wybudzenie 1 hakera
@@ -92,8 +98,9 @@ void * linHackerArrives(void * args)
     boatAndRow(id);
     printState();
   }
-  else if (waitingLinHackers >= 1 && waitingWindowsers >= 2)
+  else if (!boarding && waitingLinHackers >= 1 && waitingWindowsers >= 2)
   {
+    boarding = true;
     printf("Me[%d] Found 1 other linux hacker and 2 windowsers. Let's board!\n", id);
     pthread_cond_signal(&linHackerCanBoat); // wybudzenie 1 hakera
     pthread_cond_signal(&windowserCanBoat); // wybudzenia 1 windowsera
@@ -108,10 +115,10 @@ void * linHackerArrives(void * args)
     waitingLinHackers++;
     printf("Linux hacker %d waiting!\n", id);
     printState();
-    pthread_cond_wait(&linHackerCanBoat, &Lock);
+    pthread_cond_wait(&linHackerCanBoat, &mainLock);
   }
   boatBoard(id);
-  pthread_mutex_unlock(&Lock);
+  pthread_mutex_unlock(&mainLock);
 }
 
 void * windowserArrives(void * args)
@@ -119,10 +126,11 @@ void * windowserArrives(void * args)
   int id = *((int *)args);
   free(args);
   // sekcja krytyczna, użycie zmiennych globalnych waitingLinHackers i waitingWindowsers
-  pthread_mutex_lock(&Lock);
+  pthread_mutex_lock(&mainLock);
   printf("Hey I'm windowser %d!\n", id);
-  if (waitingWindowsers == 3)
+  if (!boarding && waitingWindowsers == 3)
   {
+    boarding = true;
     printf("Me[%d] Found 3 other windowsers! Let's board!\n", id);
     pthread_cond_signal(&windowserCanBoat); // wybudzenie 1 windowsera
     pthread_cond_signal(&windowserCanBoat); // wybudzenie 1 windowsera
@@ -132,8 +140,9 @@ void * windowserArrives(void * args)
     boatAndRow(id); // + return
     printState();
   }
-  else if (waitingWindowsers >= 1 && waitingLinHackers >= 2)
+  else if (!boarding && waitingWindowsers >= 1 && waitingLinHackers >= 2)
   {
+    boarding = true;
     printf("Me[%d] Found 1 other windowsers and 2 hackers. Let's board!\n", id);
     pthread_cond_signal(&windowserCanBoat); // wybudzenie 1 windowsera
     pthread_cond_signal(&linHackerCanBoat); // wybudzenia 1 hackera
@@ -149,10 +158,10 @@ void * windowserArrives(void * args)
     waitingWindowsers++;
     printf("Windowser %d waiting!\n", id);
     printState();
-    pthread_cond_wait(&windowserCanBoat, &Lock);
+    pthread_cond_wait(&windowserCanBoat, &mainLock);
   }
   boatBoard(id);
-  pthread_mutex_unlock(&Lock);
+  pthread_mutex_unlock(&mainLock);
 }
 
 void printState()
@@ -165,6 +174,7 @@ void boatAndRow(int id)
   printf("%d: The boat has left the dock! ", id);
   // wsiądź i odepchnij łódkę
   // broadcast do czekającyh na przystani, że mogą się szykować
+  // odblokuj lock
 }
 
 void boatBoard(int id)
