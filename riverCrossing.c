@@ -13,6 +13,7 @@ void boatBoard();
 // generator_hackerów()
 // generator_windowsów()
 void linHackerArrives();
+void windowserArrives();
 
 int main()
 {
@@ -58,6 +59,34 @@ void linHackerArrives()
   pthread_mutex_unlock(&Lock);
 }
 
+void windowserArrives()
+{
+  // sekcja krytyczna, użycie zmiennych globalnych waitingLinHackers i waitingWindowsers
+  pthread_mutex_lock(&Lock);
+  if (waitingWindowsers == 3)
+  {
+    pthread_cond_signal(&windowserCanBoat); // wybudzenie 1 windowsera
+    pthread_cond_signal(&windowserCanBoat); // wybudzenie 1 windowsera
+    pthread_cond_signal(&windowserCanBoat); // wybudzenie 1 windowsera
+    waitingWindowsers -= 3; // aktualizacja zmiennej
+    rowBoat();
+  }
+  else if (waitingWindowsers >= 1 && waitingLinHackers >= 2)
+  {
+    pthread_cond_signal(&windowserCanBoat); // wybudzenie 1 windowsera
+    pthread_cond_signal(&linHackerCanBoat); // wybudzenia 1 hackera
+    pthread_cond_signal(&linHackerCanBoat); // wybudzenie 1 hackera
+    waitingWindowsers--; // aktualizacja zmiennej
+    waitingLinHackers -= 2; // aktualizacja zmiennej
+  }
+  else
+  {
+    waitingWindowsers++;
+    pthread_cond_wait(&windowserCanBoat, &Lock);
+  }
+  boatBoard();
+  pthread_mutex_unlock(&Lock);
+}
 void rowBoat()
 {
   printf("The boat has left the dock");
