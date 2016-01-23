@@ -1,10 +1,14 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
+#include <math.h>
 
 #define true 1
 #define false 0
-#define PROGNUM 12
+
+unsigned int PROGNUM = 12;
+unsigned int SPEED = 4;
+unsigned int COLORS = true;
 
 // zmienne wspódzielone
 int waitingLinHackers, waitingWindowsers;
@@ -12,25 +16,25 @@ int boarding; // true, gdy łódka wodowana
 int inBoat; // liczba programistów w łódce
 
 // zmienne POSIX-owe
-pthread_t Programmers[PROGNUM];
+pthread_t * Programmers; // tablica wątków-programistów
 pthread_mutex_t mainLock; // lock dla wszystkich dzielonych zmiennych
 pthread_cond_t linHackerCanBoard; 
 pthread_cond_t windowserCanBoard;
 pthread_cond_t boardingDone;
 pthread_cond_t readyToRow;
 
-void boardAndRow(int);
-void boardBoat(int);
-// generator_hackerów()
-// generator_windowsów()
-void * linHackerArrives(void * args);
-void * windowserArrives(void * args);
+void programmersRandomGenerator(int, int);
+void * linHackerArrives(void *);
+void * windowserArrives(void *);
+void boardBoat(int); // wejście na łódkę
+void boardAndRow(int); // wejście na łódkę i wiosłowanie
 
 void printState();
 
 int main()
 {
   srand(time(NULL));
+  Programmers = malloc(PROGNUM * sizeof(pthread_t));
 
   // inicjowanie zmiennych dzielonych
   waitingLinHackers = 0;
@@ -45,21 +49,12 @@ int main()
   pthread_cond_init(&boardingDone, NULL);
   pthread_cond_init(&readyToRow, NULL);
 
-  int tret; // wartość zwracana przez różne pthread_funkcja()
-
   // startowanie wątków
-  for (int i = 0; i < PROGNUM; i++)
-  {
-    int * id = malloc(sizeof(int));
-    *id = i;
-    if (tret = pthread_create(&Programmers[i], NULL, rand() % 2 ? linHackerArrives : windowserArrives, (void *)id))
-    {
-      fprintf(stderr,"Error from pthread_create(). Returned %i instead of 0.", tret); // wyświetlanie kodu błędu
-      exit(EXIT_FAILURE);
-    }
-  }
+  programmersRandomGenerator(PROGNUM, 10);
 
   // kończenie wątków
+  int tret; // wartość zwracana przez różne pthread_funkcja()
+
   for (int i = 0; i < PROGNUM; i++)
     if (tret = pthread_join(Programmers[i], NULL))
     {
@@ -90,7 +85,6 @@ void * linHackerArrives(void * args)
   {
     boarding = true;
     printf("Me[%d] Found 3 other linux hackers! Let's board!\n", id);
-    // zaczynamy boarding
     pthread_cond_signal(&linHackerCanBoard); // wybudzenie 1 hakera
     pthread_cond_signal(&linHackerCanBoard); // wybudzenie 1 hakera
     pthread_cond_signal(&linHackerCanBoard); // wybudzenie 1 hakera
@@ -177,6 +171,26 @@ void * windowserArrives(void * args)
   else
     boardBoat(id);
   pthread_mutex_unlock(&mainLock);
+}
+
+void programmersRandomGenerator(int iter, int speed)
+{
+  int tret; // wartość zwracana przez różne pthread_funkcja()
+  int random;
+  int * id;
+  for (int i = 0; i < iter; i++)
+  {
+    random = rand() % (int)pow(10, speed);
+    while (random-- >= 1);
+    id = malloc(sizeof(int));
+    *id = i;
+    // w zależności od losowania wątek hackera lub windowsiarza
+    if (tret = pthread_create(&Programmers[i], NULL, rand() % 2 ? linHackerArrives : windowserArrives, (void *)id))
+    {
+      fprintf(stderr,"Error from pthread_create(). Returned %i instead of 0.", tret); // wyświetlanie kodu błędu
+      exit(EXIT_FAILURE);
+    }
+  }
 }
 
 void printState()
