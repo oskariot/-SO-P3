@@ -19,6 +19,39 @@ Wejście programisty na łódkę odbywa się z użyciem funkcji **_boardBoat()_*
 Rozwiązanie może korzystać z **tylko jednej** zmiennej typu *mutex*.
 
 ## Kompilacja
+Aby skompilować program oraz tester należy uruchomić:
+```Makefile
+make
+```
+lub
+```Makefile
+make compile
+```
 ## Uruchamianie
+Program przyjmuje następujące parametry:
+```Makefile
+-s <wartość> # prędkość generowania programistów [0...12] (domyślnie 9)
+-p <wartość> # ilość programistów do wygenerowania [0...] (domyślnie 100)
+-t <wartość> # [0 lub 1] gdy 1 do pliku tekstowego drukuje raport do testów (domyślnie 1) 
+```
+Przykładowe uruchomienie:
+```Makefile
+./river
+```
 ## Testowanie
+```Makefile
+make test1 # parametry
+```
+```Makefile
+make test2
+```
+```Makefile
+make test3
+```
+```Makefile
+make test4
+```
+```Makefile
+make test5
+```
 ## Usuwanie
