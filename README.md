@@ -1,9 +1,7 @@
 # Pracownia P3 - Systemy Operacyjne
 
 ## Problem przeprawy przez rzekę (*River crossing*)
-Pewna przeprawa przez rzekę jest dzielona zarówno przez linuxowych Hakerów, jak i 
-pracowników Microsoftu. Do przeprawy używana jest łódka, która mieści tylko **czterech**
-programistów i zawsze płynie **w pełni** załadowana.
+Pewna przeprawa przez rzekę jest dzielona zarówno przez linuxowych Hakerów, jak i pracowników Microsoftu. Do przeprawy używana jest łódka, która mieści tylko **czterech** programistów i zawsze płynie **w pełni** załadowana.
 Aby zagwarantować bezpieczeństwo programistów w łódce nie można dopuścić do 
 następujących sytuacji:
 A particular river crossing is shared by both Linux Hackers and Microsoft employees.
