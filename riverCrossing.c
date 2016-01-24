@@ -12,16 +12,19 @@
 #define WARNING_COLOR "\033[0;31m"
 #define BOAT_INFO_COLOR "\033[0;32m"
 #define RESET_COLOR "\033[0m"
+#define LIGHT_BLUE "\033[1;34m"
 
 // ustawienia
-unsigned int PROGNUM = 20;
-unsigned int SPEED = 3;
+unsigned int PROGNUM = 100;
+unsigned int SPEED = 8;
 unsigned int COLORS = true;
 
 // zmienne wspódzielone
 int waitingLinHackers, waitingWindowsers;
 int boarding; // true, gdy łódka wodowana
 int inBoat; // liczba programistów w łódce
+int programmersArrived; // liczba przybyłych programistów
+int noHope; // true, gdy nie da się zabrać pozostałych programistów
 
 // zmienne POSIX-owe
 pthread_t * Programmers; // tablica wątków-programistów
@@ -48,6 +51,8 @@ int main()
   waitingWindowsers = 0;
   boarding = false;
   inBoat = 0;
+  programmersArrived = 0;
+  noHope = false;
 
   // inicjowanie zmiennych POSIX-owych
   pthread_mutex_init(&mainLock, NULL);
@@ -68,6 +73,10 @@ int main()
       fprintf(stderr, "Error from pthread_join(). Returned %i instead of 0.", tret); // wyświetlanie kodu błędu
       exit(EXIT_FAILURE);
     }
+  if (noHope)
+    printf("\n");
+  else
+    printf("Succes!!\n");
 
   // destrukcja zmiennych POSIX-owych
   pthread_mutex_destroy(&mainLock);
@@ -87,6 +96,7 @@ void * linHackerArrives(void * args)
   pthread_mutex_lock(&mainLock);
   while (boarding) // czekanie aż łódka będzie dostępna
     pthread_cond_wait(&boardingDone, &mainLock);
+  programmersArrived++;
   printf("%sLinux hacker #%d arrives...%s\n", HACKER_COLOR, id, RESET_COLOR);
   if (waitingLinHackers == 3)
   {
@@ -113,14 +123,24 @@ void * linHackerArrives(void * args)
   {
     waitingLinHackers++;
     if (waitingLinHackers == 1 && waitingWindowsers == 3)
-      printf("%sWaiting %s1 Linux hacker%s and %s3 Windowsers%s. Can't load the boat!%s\n",
+      printf("%sAwaiting %s1%s Linux hacker and %s3%s Windowsers. Can't load the boat!%s\n",
             WARNING_COLOR, HACKER_COLOR, WARNING_COLOR, WINDOWSER_COLOR, WARNING_COLOR, RESET_COLOR);
     if (waitingLinHackers == 3 && waitingWindowsers == 1)
-      printf("%sWaiting %s3 Linux hackers%s and %s1 Windowser%s. Can't load the boat!%s\n",
+      printf("%sAwaiting %s3%s Linux hackers and %s1%s Windowser. Can't load the boat!%s\n",
             WARNING_COLOR, HACKER_COLOR, WARNING_COLOR, WINDOWSER_COLOR, WARNING_COLOR, RESET_COLOR);
-    pthread_cond_wait(&linHackerCanBoard, &mainLock); // oczekiwanie możliwość wejścia
+    if (programmersArrived == PROGNUM)
+    {
+      noHope = true;
+      printf("%d programmers left on shore :( : ", (PROGNUM - 1) % 4 + 1);
+      pthread_cond_broadcast(&linHackerCanBoard);
+      pthread_cond_broadcast(&windowserCanBoard);
+    }
+    else
+      pthread_cond_wait(&linHackerCanBoard, &mainLock); // oczekiwanie możliwość wejścia
   }
-  if (iWillRow)
+  if (noHope)
+    printf("%s#%d%s ", HACKER_COLOR, id, RESET_COLOR);
+  else if (iWillRow)
     boardAndRow(id, 1);
   else
     boardBoat(id, 1);
@@ -136,6 +156,7 @@ void * windowserArrives(void * args)
   pthread_mutex_lock(&mainLock);
   while (boarding) // czekanie aż łódka będzie dostępna
     pthread_cond_wait(&boardingDone, &mainLock);
+  programmersArrived++;
   printf("%sWindowser #%d arrives...%s\n", WINDOWSER_COLOR, id, RESET_COLOR);
   if (waitingWindowsers == 3)
   {
@@ -162,15 +183,24 @@ void * windowserArrives(void * args)
   {
     waitingWindowsers++;
     if (waitingLinHackers == 1 && waitingWindowsers == 3)
-      printf("%sWaiting %s1 Linux hacker%s and %s3 Windowsers%s. Can't load the boat!%s\n",
-            WARNING_COLOR, HACKER_COLOR, WARNING_COLOR, WINDOWSER_COLOR, WARNING_COLOR, RESET_COLOR);
+      printf("%sAwaiting %s1%s Linux hacker and %s3%s Windowsers. Can't load the boat!%s\n",
+            WARNING_COLOR, HACKER_COLOR, WARNING_COLOR, WINDOWSER_COLOR, LIGHT_BLUE, RESET_COLOR);
     if (waitingLinHackers == 3 && waitingWindowsers == 1)
-      printf("%sWaiting %s3 Linux hackers%s and %s1 Windowser%s. Can't load the boat!%s\n",
+      printf("%sAwaiting %s3%s Linux hackers and %s1%s Windowser. Can't load the boat!%s\n",
             WARNING_COLOR, HACKER_COLOR, WARNING_COLOR, WINDOWSER_COLOR, WARNING_COLOR, RESET_COLOR);
-  
-    pthread_cond_wait(&windowserCanBoard, &mainLock); // oczekiwanie możliwość wejścia
+    if (programmersArrived == PROGNUM)
+    {
+      noHope = true;
+      printf("%d programmers left on shore :( : ", (PROGNUM - 1) % 4 + 1);
+      pthread_cond_broadcast(&linHackerCanBoard);
+      pthread_cond_broadcast(&windowserCanBoard);
+    }
+    else
+      pthread_cond_wait(&windowserCanBoard, &mainLock); // oczekiwanie możliwość wejścia
   }
-  if (iWillRow)
+  if (noHope)
+    printf("%s#%d%s ", WINDOWSER_COLOR, id, RESET_COLOR);
+  else if (iWillRow)
     boardAndRow(id, 0);
   else
     boardBoat(id, 0);
@@ -203,6 +233,13 @@ void boardAndRow(int id, int type)
   inBoat = 0;
   printf("%s %d%s  /\n", type ? HACKER_COLOR : WINDOWSER_COLOR , id, RESET_COLOR);
   pthread_cond_broadcast(&boardingDone); // rozpoczęcie nowych naborów do łódki
+  if (programmersArrived == PROGNUM && waitingLinHackers + waitingWindowsers > 0) // ostatni kurs
+  {
+    noHope = true; // zakomunikuj pozostałym, że już nie przepłyną
+    printf("%d programmers left on shore :( : ", (PROGNUM - 1) % 4 + 1);
+    pthread_cond_broadcast(&linHackerCanBoard);
+    pthread_cond_broadcast(&windowserCanBoard);
+  }
 }
 
 void boardBoat(int id, int type)
