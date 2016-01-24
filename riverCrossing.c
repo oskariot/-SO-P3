@@ -111,6 +111,7 @@ int main(int argc, char *argv[])
       fprintf(stderr, "Error from pthread_join(). Returned %i instead of 0.", tret); // wyświetlanie kodu błędu
       exit(EXIT_FAILURE);
     }
+
   if (noHope)
   {
     printf("\n");
@@ -188,7 +189,7 @@ void * linHackerArrives(void * args)
       pthread_cond_broadcast(&windowserCanBoard); // wybudzenie pozostałych
     }
     else
-      pthread_cond_wait(&linHackerCanBoard, &mainLock); // oczekiwanie możliwość wejścia
+      pthread_cond_wait(&linHackerCanBoard, &mainLock); // oczekiwanie na możliwość wejścia
   }
   if (noHope)
   {
@@ -254,7 +255,7 @@ void * windowserArrives(void * args)
       pthread_cond_broadcast(&windowserCanBoard); // wybudzenie pozostałych
     }
     else
-      pthread_cond_wait(&windowserCanBoard, &mainLock); // oczekiwanie możliwość wejścia
+      pthread_cond_wait(&windowserCanBoard, &mainLock); // oczekiwanie na możliwość wejścia
   }
   if (noHope)
   {
@@ -318,7 +319,7 @@ void boardBoat(int id, int type)
   if (TEST) fprintf(fout, " %d", withState(id, type));
 }
 
-void failInfo()
+void failInfo() // komunikat o ostatnim ładunku, który nie przejdzie
 {
   printf("%s___________________________________________%s\n", SUCCESS_COLOR, RESET_COLOR);
   printf("%sFinished!\n%d programmers left on shore: %s", SUCCESS_COLOR, (PROGNUM - 1) % 4 + 1, RESET_COLOR);
