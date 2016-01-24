@@ -17,3 +17,8 @@ Zaimplementować rozwiązanie powyższego konfliktu zasobów z użyciem wątków
 
 Wejście programisty na łódkę odbywa się z użyciem funkcji **_boardBoat()_**. Ostatni ze zgłoszonych programistów wywołuje funkcję **_boardAndRow()_** ("wejdź na pokład i wiosłuj"). Należy zadbać, żeby funkcja **_boardAndRow()_** została wywołana, gdy pozostali programiści zajęli już swoje miejsca w łódce. W czasie wodowania należy powstrzymać pozostałych programistów od wchodzenia do łódki. <br />
 Rozwiązanie może korzystać z **tylko jednej** zmiennej typu *mutex*.
+
+## Kompilacja
+## Uruchamianie
+## Testowanie
+## Usuwanie
