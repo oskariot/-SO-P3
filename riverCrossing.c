@@ -22,8 +22,7 @@
 
 // ustawienia
 unsigned int PROGNUM = 100;
-unsigned int SPEED = 30;
-unsigned int COLORS = true;
+unsigned int SPEED = 9;
 unsigned int TEST = false;
 
 // zmienne wspódzielone
@@ -68,8 +67,8 @@ int main(int argc, char *argv[])
   }
 
   // normalizacja prędkości wykonania
-  if (SPEED > 40)
-    SPEED = 40;
+  if (SPEED > 12)
+    SPEED = 12;
   else if (SPEED < 0)
     SPEED = 0;
   Programmers = malloc(PROGNUM * sizeof(pthread_t));
@@ -275,7 +274,7 @@ void programmersRandomGenerator(int iter, int speed)
   int * id;
   for (int i = 0; i < iter; i++)
   {
-    random = rand() % (int)pow(2, speed);
+    random = rand() % (int)pow(10, speed);
     while (random-- >= 1);
     id = malloc(sizeof(int));
     *id = i;
