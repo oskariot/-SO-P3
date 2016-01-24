@@ -71,6 +71,7 @@ int main(int argc, char *argv[])
     SPEED = 12;
   else if (SPEED < 0)
     SPEED = 0;
+
   Programmers = malloc(PROGNUM * sizeof(pthread_t));
 
   if (TEST) // otwarcie pliku do testów
