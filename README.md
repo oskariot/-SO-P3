@@ -47,19 +47,28 @@ lub
 ./riverCrossing -s 1 -p 300 -t 0
 ```
 ## Testowanie
+Testowanie odbywa się za pomocą programu **_./tester_**. Komenda zbiorcza ```make test[nr]``` uruchamia program dla pewnych parametrów z zapisem raportu do pliku. Następnie **_./tester_** analizuje raport i drukuje podsumowanie poprawności na wyjście standardowe. Następnie raport jest kasowany.<br />
+Ponieważ działanie generatora programistów zależy od działania generatora liczb losowych, testy warto uruchomić kilkukrotnie. Przygotowano pięć testów.
 ```Makefile
-make test1 # parametry
+make test1 # uruchomienie testu dla 199 programistów
+```
+```Makefile 
+make test2 # uruchomienie testu dla 200 programistów
 ```
 ```Makefile
-make test2
+make test3 # uruchomienie testu dla 201 programistów
 ```
 ```Makefile
-make test3
+make test4 # uruchomienie testu dla 202 programistów
 ```
 ```Makefile
-make test4
-```
-```Makefile
-make test5
+make test5 # uruchomienie testu dla 1015 programistów
 ```
 ## Usuwanie
+Aby usunąć program należy wykonać:
+```Makefile
+make clean
+```
+
+
+**Oskar Wieczorek,  24.01.2016**
