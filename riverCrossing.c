@@ -37,7 +37,6 @@ void * linHackerArrives(void *args);
 void * windowserArrives(void *args);
 void boardBoat(int id, int type); // wejście na łódkę
 void boardAndRow(int id, int type); // wejście na łódkę i wiosłowanie
-void printState();
 
 int main()
 {
@@ -98,8 +97,6 @@ void * linHackerArrives(void * args)
     waitingLinHackers -= 3; // aktualizacja zmiennej
     iWillRow = true; // ostatni == ten wątek == będzie wiosłował
     pthread_cond_wait(&readyToRow, &mainLock); // oczekiwanie aż wsiądą do łódki
-
-    //printState();
   }
   else if (waitingLinHackers >= 1 && waitingWindowsers >= 2)
   {
@@ -111,8 +108,6 @@ void * linHackerArrives(void * args)
     waitingWindowsers -= 2; // aktualizacja zmiennej
     iWillRow = true; // ostatni == ten wątek == będzie wiosłował
     pthread_cond_wait(&readyToRow, &mainLock); // oczekiwanie aż wsiądą do łódki
-
-    //printState();
   }
   else
   {
@@ -123,7 +118,6 @@ void * linHackerArrives(void * args)
     if (waitingLinHackers == 3 && waitingWindowsers == 1)
       printf("%sWaiting %s3 Linux hackers%s and %s1 Windowser%s. Can't load the boat!%s\n",
             WARNING_COLOR, HACKER_COLOR, WARNING_COLOR, WINDOWSER_COLOR, WARNING_COLOR, RESET_COLOR);
-    printState();
     pthread_cond_wait(&linHackerCanBoard, &mainLock); // oczekiwanie możliwość wejścia
   }
   if (iWillRow)
@@ -152,8 +146,6 @@ void * windowserArrives(void * args)
     waitingWindowsers -= 3; // aktualizacja zmiennej
     iWillRow = true; // ostatni == ten wątek == będzie wiosłował
     pthread_cond_wait(&readyToRow, &mainLock); // oczekiwanie aż wsiądą do łódki
-
-   //printState();
   }
   else if (waitingWindowsers >= 1 && waitingLinHackers >= 2)
   {
@@ -165,8 +157,6 @@ void * windowserArrives(void * args)
     waitingLinHackers -= 2; // aktualizacja zmiennej
     iWillRow = true; // ostatni == ten wątek == będzie wiosłował
     pthread_cond_wait(&readyToRow, &mainLock); // oczekiwanie aż wsiądą do łódki
-
-    //printState();
   }
   else
   {
@@ -177,7 +167,7 @@ void * windowserArrives(void * args)
     if (waitingLinHackers == 3 && waitingWindowsers == 1)
       printf("%sWaiting %s3 Linux hackers%s and %s1 Windowser%s. Can't load the boat!%s\n",
             WARNING_COLOR, HACKER_COLOR, WARNING_COLOR, WINDOWSER_COLOR, WARNING_COLOR, RESET_COLOR);
-    printState();
+  
     pthread_cond_wait(&windowserCanBoard, &mainLock); // oczekiwanie możliwość wejścia
   }
   if (iWillRow)
@@ -205,11 +195,6 @@ void programmersRandomGenerator(int iter, int speed)
       exit(EXIT_FAILURE);
     }
   }
-}
-
-void printState()
-{
-  //printf("waiting hackers: %d, waiting windowsers: %d\n", waitingLinHackers, waitingWindowsers);
 }
 
 void boardAndRow(int id, int type)
