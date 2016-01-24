@@ -1,10 +1,12 @@
-# -SO-P3
+# Pracownia P3 - Systemy Operacyjne
 
-Jako P3 chciałbym w miarę możliwości zrobić bardziej skomplikowany problem synchronizacji (rozwinięcie P2).
-Po przeszukaniu Internetu w poszukiwaniu trudnych problemów synchronizacji natrafiłem na następujący problem:
-
-## River Crossing
+## Problem przeprawy przez rzekę (*River crossing*)
 ```
+Pewna przeprawa przez rzekę jest dzielona zarówno przez linuxowych Hakerów, jak i 
+pracowników Microsoftu. Do przeprawy używana jest łódka, która mieści tylko **czterech**
+programistów i zawsze płynie **w pełni** załadowana.
+Aby zagwarantować bezpieczeństwo programistów w łódce nie można dopuścić do 
+następujących sytuacji:
 A particular river crossing is shared by both Linux Hackers and Microsoft employees.
 A boat is used to cross the river, but it only seats four people, and must always carry
 a full load. In order to guarantee the safety of the hackers, you cannot put three
