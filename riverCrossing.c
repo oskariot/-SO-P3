@@ -6,8 +6,16 @@
 #define true 1
 #define false 0
 
-unsigned int PROGNUM = 12;
-unsigned int SPEED = 4;
+// kolory
+#define HACKER_COLOR "\033[0;34m"
+#define WINDOWSER_COLOR "\033[0;33m"
+#define WARNING_COLOR "\033[0;31m"
+#define BOAT_INFO_COLOR "\033[0;32m"
+#define RESET_COLOR "\033[0m"
+
+// ustawienia
+unsigned int PROGNUM = 20;
+unsigned int SPEED = 3;
 unsigned int COLORS = true;
 
 // zmienne wspódzielone
@@ -23,12 +31,12 @@ pthread_cond_t windowserCanBoard;
 pthread_cond_t boardingDone;
 pthread_cond_t readyToRow;
 
-void programmersRandomGenerator(int, int);
-void * linHackerArrives(void *);
-void * windowserArrives(void *);
-void boardBoat(int); // wejście na łódkę
-void boardAndRow(int); // wejście na łódkę i wiosłowanie
-
+// funkcje
+void programmersRandomGenerator(int iter, int speed);
+void * linHackerArrives(void *args);
+void * windowserArrives(void *args);
+void boardBoat(int id, int type); // wejście na łódkę
+void boardAndRow(int id, int type); // wejście na łódkę i wiosłowanie
 void printState();
 
 int main()
@@ -50,7 +58,7 @@ int main()
   pthread_cond_init(&readyToRow, NULL);
 
   // startowanie wątków
-  programmersRandomGenerator(PROGNUM, 10);
+  programmersRandomGenerator(PROGNUM, SPEED);
 
   // kończenie wątków
   int tret; // wartość zwracana przez różne pthread_funkcja()
@@ -80,11 +88,10 @@ void * linHackerArrives(void * args)
   pthread_mutex_lock(&mainLock);
   while (boarding) // czekanie aż łódka będzie dostępna
     pthread_cond_wait(&boardingDone, &mainLock);
-  printf("Hey I'm linux hacker %d!\n", id);
+  printf("%sLinux hacker #%d arrives...%s\n", HACKER_COLOR, id, RESET_COLOR);
   if (waitingLinHackers == 3)
   {
     boarding = true;
-    printf("Me[%d] Found 3 other linux hackers! Let's board!\n", id);
     pthread_cond_signal(&linHackerCanBoard); // wybudzenie 1 hakera
     pthread_cond_signal(&linHackerCanBoard); // wybudzenie 1 hakera
     pthread_cond_signal(&linHackerCanBoard); // wybudzenie 1 hakera
@@ -92,12 +99,11 @@ void * linHackerArrives(void * args)
     iWillRow = true; // ostatni == ten wątek == będzie wiosłował
     pthread_cond_wait(&readyToRow, &mainLock); // oczekiwanie aż wsiądą do łódki
 
-    printState();
+    //printState();
   }
   else if (waitingLinHackers >= 1 && waitingWindowsers >= 2)
   {
     boarding = true;
-    printf("Me[%d] Found 1 other linux hacker and 2 windowsers. Let's board!\n", id);
     pthread_cond_signal(&linHackerCanBoard); // wybudzenie 1 hakera
     pthread_cond_signal(&windowserCanBoard); // wybudzenia 1 windowsera
     pthread_cond_signal(&windowserCanBoard); // wybudzenie 1 windowsera
@@ -106,19 +112,24 @@ void * linHackerArrives(void * args)
     iWillRow = true; // ostatni == ten wątek == będzie wiosłował
     pthread_cond_wait(&readyToRow, &mainLock); // oczekiwanie aż wsiądą do łódki
 
-    printState();
+    //printState();
   }
   else
   {
     waitingLinHackers++;
-    printf("Linux hacker %d waiting!\n", id);
+    if (waitingLinHackers == 1 && waitingWindowsers == 3)
+      printf("%sWaiting %s1 Linux hacker%s and %s3 Windowsers%s. Can't load the boat!%s\n",
+            WARNING_COLOR, HACKER_COLOR, WARNING_COLOR, WINDOWSER_COLOR, WARNING_COLOR, RESET_COLOR);
+    if (waitingLinHackers == 3 && waitingWindowsers == 1)
+      printf("%sWaiting %s3 Linux hackers%s and %s1 Windowser%s. Can't load the boat!%s\n",
+            WARNING_COLOR, HACKER_COLOR, WARNING_COLOR, WINDOWSER_COLOR, WARNING_COLOR, RESET_COLOR);
     printState();
     pthread_cond_wait(&linHackerCanBoard, &mainLock); // oczekiwanie możliwość wejścia
   }
   if (iWillRow)
-    boardAndRow(id);
+    boardAndRow(id, 1);
   else
-    boardBoat(id);
+    boardBoat(id, 1);
   pthread_mutex_unlock(&mainLock);
 }
 
@@ -131,11 +142,10 @@ void * windowserArrives(void * args)
   pthread_mutex_lock(&mainLock);
   while (boarding) // czekanie aż łódka będzie dostępna
     pthread_cond_wait(&boardingDone, &mainLock);
-  printf("Hey I'm windowser %d!\n", id);
+  printf("%sWindowser #%d arrives...%s\n", WINDOWSER_COLOR, id, RESET_COLOR);
   if (waitingWindowsers == 3)
   {
     boarding = true;
-    printf("Me[%d] Found 3 other windowsers! Let's board!\n", id);
     pthread_cond_signal(&windowserCanBoard); // wybudzenie 1 windowsera
     pthread_cond_signal(&windowserCanBoard); // wybudzenie 1 windowsera
     pthread_cond_signal(&windowserCanBoard); // wybudzenie 1 windowsera
@@ -143,12 +153,11 @@ void * windowserArrives(void * args)
     iWillRow = true; // ostatni == ten wątek == będzie wiosłował
     pthread_cond_wait(&readyToRow, &mainLock); // oczekiwanie aż wsiądą do łódki
 
-    printState();
+   //printState();
   }
   else if (waitingWindowsers >= 1 && waitingLinHackers >= 2)
   {
     boarding = true;
-    printf("Me[%d] Found 1 other windowsers and 2 hackers. Let's board!\n", id);
     pthread_cond_signal(&windowserCanBoard); // wybudzenie 1 windowsera
     pthread_cond_signal(&linHackerCanBoard); // wybudzenia 1 hackera
     pthread_cond_signal(&linHackerCanBoard); // wybudzenie 1 hackera
@@ -157,19 +166,24 @@ void * windowserArrives(void * args)
     iWillRow = true; // ostatni == ten wątek == będzie wiosłował
     pthread_cond_wait(&readyToRow, &mainLock); // oczekiwanie aż wsiądą do łódki
 
-    printState();
+    //printState();
   }
   else
   {
     waitingWindowsers++;
-    printf("Windowser %d waiting!\n", id);
+    if (waitingLinHackers == 1 && waitingWindowsers == 3)
+      printf("%sWaiting %s1 Linux hacker%s and %s3 Windowsers%s. Can't load the boat!%s\n",
+            WARNING_COLOR, HACKER_COLOR, WARNING_COLOR, WINDOWSER_COLOR, WARNING_COLOR, RESET_COLOR);
+    if (waitingLinHackers == 3 && waitingWindowsers == 1)
+      printf("%sWaiting %s3 Linux hackers%s and %s1 Windowser%s. Can't load the boat!%s\n",
+            WARNING_COLOR, HACKER_COLOR, WARNING_COLOR, WINDOWSER_COLOR, WARNING_COLOR, RESET_COLOR);
     printState();
     pthread_cond_wait(&windowserCanBoard, &mainLock); // oczekiwanie możliwość wejścia
   }
   if (iWillRow)
-    boardAndRow(id);
+    boardAndRow(id, 0);
   else
-    boardBoat(id);
+    boardBoat(id, 0);
   pthread_mutex_unlock(&mainLock);
 }
 
@@ -195,21 +209,23 @@ void programmersRandomGenerator(int iter, int speed)
 
 void printState()
 {
-  printf("waiting hackers: %d, waiting windowsers: %d\n", waitingLinHackers, waitingWindowsers);
+  //printf("waiting hackers: %d, waiting windowsers: %d\n", waitingLinHackers, waitingWindowsers);
 }
 
-void boardAndRow(int id)
+void boardAndRow(int id, int type)
 {
   boarding = false;
   inBoat = 0;
-  printf("%d: The boat has left the dock! ", id);
+  printf("%s %d%s  /\n", type ? HACKER_COLOR : WINDOWSER_COLOR , id, RESET_COLOR);
   pthread_cond_broadcast(&boardingDone); // rozpoczęcie nowych naborów do łódki
 }
 
-void boardBoat(int id)
+void boardBoat(int id, int type)
 {
+  if (inBoat == 0)
+    printf("%sBoat starts: \t%s \\ ", BOAT_INFO_COLOR, RESET_COLOR);
   inBoat++;
   if (inBoat == 3)
     pthread_cond_signal(&readyToRow); // ostatni może zacząć wiosłować
-  printf("%d is in!\n", id);
+  printf("%s %d %s | ", type ? HACKER_COLOR : WINDOWSER_COLOR, id, RESET_COLOR);
 }
