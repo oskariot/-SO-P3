@@ -71,4 +71,4 @@ make clean
 ```
 
 
-**Oskar Wieczorek,  24.01.2016**
+*Oskar Wieczorek,  24.01.2016*
