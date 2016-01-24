@@ -2,23 +2,29 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 // c-owa imitacja boola
 #define true 1
 #define false 0
 
 // kolory
-#define HACKER_COLOR "\033[0;34m"
-#define WINDOWSER_COLOR "\033[0;33m"
+#define HACKER_COLOR "\033[0;33m"
+#define WINDOWSER_COLOR "\033[0;34m"
 #define WARNING_COLOR "\033[0;31m"
 #define BOAT_INFO_COLOR "\033[0;32m"
 #define RESET_COLOR "\033[0m"
-#define LIGHT_BLUE "\033[1;34m"
+#define SUCCESS_COLOR "\033[1;32m"
+
+// makro withState() zwraca hakera z plusem, windowsera z minusem
+// jest pomocne przy zapisie do pliku testowego
+#define withState(id, type) ((type) ? ((id) + 1) : ((-(id)) - 1))
 
 // ustawienia
 unsigned int PROGNUM = 100;
-unsigned int SPEED = 8;
+unsigned int SPEED = 30;
 unsigned int COLORS = true;
+unsigned int TEST = false;
 
 // zmienne wspódzielone
 int waitingLinHackers, waitingWindowsers;
@@ -26,11 +32,14 @@ int boarding; // true, gdy łódka wodowana
 int inBoat; // liczba programistów w łódce
 int programmersArrived; // liczba przybyłych programistów na przystań
 int noHope; // true, gdy nie da się zabrać pozostałych programistów
+int boatsShipped; // liczba łódek, które przepłynęły
+
+FILE * fout; // plik outputowy dla testów
 
 // zmienne POSIX-owe
 pthread_t * Programmers; // tablica wątków-programistów
 pthread_mutex_t mainLock; // lock dla wszystkich dzielonych zmiennych
-pthread_cond_t linHackerCanBoard; 
+pthread_cond_t linHackerCanBoard;
 pthread_cond_t windowserCanBoard;
 pthread_cond_t boardingDone;
 pthread_cond_t readyToRow;
@@ -41,11 +50,39 @@ void * linHackerArrives(void *args);
 void * windowserArrives(void *args);
 void boardBoat(int id, int type); // wejście na łódkę
 void boardAndRow(int id, int type); // wejście na łódkę i wiosłowanie
+void failInfo(void); // funkcja pomocnicza
 
-int main()
+int main(int argc, char *argv[])
 {
   srand(time(NULL));
+
+  // wczytanie parametrów programu
+  for (int i = 1; i < argc; i += 2)
+  {
+    if (!strcmp(argv[i], "-p"))
+      PROGNUM = atoi(argv[i+1]);
+    if (!strcmp(argv[i], "-s"))
+      SPEED = atoi(argv[i+1]);
+    if (!strcmp(argv[i], "-t"))
+      TEST = atoi(argv[i+1]);
+  }
+
+  // normalizacja prędkości wykonania
+  if (SPEED > 40)
+    SPEED = 40;
+  else if (SPEED < 0)
+    SPEED = 0;
   Programmers = malloc(PROGNUM * sizeof(pthread_t));
+
+  if (TEST) // otwarcie pliku do testów
+  {
+    fout = fopen("output.txt", "w");
+    fprintf(fout, "%d\n", PROGNUM);
+  }
+
+  // info
+  printf("%sPARAMS(speed => %d, programmers => %d, test => %s)%s\n",
+        BOAT_INFO_COLOR, SPEED, PROGNUM, TEST ? "true" : "false", RESET_COLOR);
 
   // inicjowanie zmiennych dzielonych
   waitingLinHackers = 0;
@@ -54,6 +91,7 @@ int main()
   inBoat = 0;
   programmersArrived = 0;
   noHope = false;
+  boatsShipped = 0;
 
   // inicjowanie zmiennych POSIX-owych
   pthread_mutex_init(&mainLock, NULL);
@@ -74,9 +112,17 @@ int main()
       exit(EXIT_FAILURE);
     }
   if (noHope)
+  {
     printf("\n");
+    if (TEST) fprintf(fout, "\n");
+  }
   else
-    printf("Succes!!\n");
+  {
+    printf("%s___________________________________________%s\n", SUCCESS_COLOR, RESET_COLOR);
+    printf("%sFinished!\nAll programmers transported.\n%s", SUCCESS_COLOR, RESET_COLOR);
+  }
+  printf("%sSent %d boats.\n%s", SUCCESS_COLOR, boatsShipped, RESET_COLOR);
+  if (TEST) fprintf(fout, "%d\n", boatsShipped);
 
   // destrukcja zmiennych POSIX-owych
   pthread_mutex_destroy(&mainLock);
@@ -84,6 +130,9 @@ int main()
   pthread_cond_destroy(&windowserCanBoard);
   pthread_cond_destroy(&boardingDone);
   pthread_cond_destroy(&readyToRow);
+
+  if (TEST) // zamknięcie pliku
+    fclose(fout);
   return 0;
 }
 
@@ -106,6 +155,7 @@ void * linHackerArrives(void * args)
     pthread_cond_signal(&linHackerCanBoard); // wybudzenie 1 hakera
     waitingLinHackers -= 3; // aktualizacja zmiennej
     iWillRow = true; // ostatni == ten wątek == będzie wiosłował
+    if (TEST) fprintf(fout, "1"); // początek łodki w pliku testowym
     pthread_cond_wait(&readyToRow, &mainLock); // oczekiwanie aż wsiądą do łódki
   }
   else if (waitingLinHackers >= 1 && waitingWindowsers >= 2) // można wypłynąć
@@ -117,30 +167,34 @@ void * linHackerArrives(void * args)
     waitingLinHackers--; // aktualizacja zmiennej
     waitingWindowsers -= 2; // aktualizacja zmiennej
     iWillRow = true; // ostatni == ten wątek == będzie wiosłował
+    if (TEST) fprintf(fout, "1"); // początek łodki w pliku testowym
     pthread_cond_wait(&readyToRow, &mainLock); // oczekiwanie aż wsiądą do łódki
   }
   else // uśpienie
   {
     waitingLinHackers++;
-    // wypisywanie sytuacji "3 do 1"
+    // wypisywanie sytuacji "3 na 1"
     if (waitingLinHackers == 1 && waitingWindowsers == 3)
-      printf("%sAwaiting %s1%s Linux hacker and %s3%s Windowsers. Can't load the boat!%s\n",
-            WARNING_COLOR, HACKER_COLOR, WARNING_COLOR, WINDOWSER_COLOR, WARNING_COLOR, RESET_COLOR);
+      printf("%sAwaiting 1 Linux hacker and 3 Windowsers. Can't load the boat!%s\n",
+            WARNING_COLOR, RESET_COLOR);
     if (waitingLinHackers == 3 && waitingWindowsers == 1)
-      printf("%sAwaiting %s3%s Linux hackers and %s1%s Windowser. Can't load the boat!%s\n",
-            WARNING_COLOR, HACKER_COLOR, WARNING_COLOR, WINDOWSER_COLOR, WARNING_COLOR, RESET_COLOR);
+      printf("%sAwaiting 3 Linux hackers and 1 Windowser. Can't load the boat!%s\n",
+            WARNING_COLOR, RESET_COLOR);
     if (programmersArrived == PROGNUM) // gdy ostatni, wybudzenie reszty
     {
-      noHope = true;
-      printf("%d programmers left on shore :( : ", (PROGNUM - 1) % 4 + 1);
-      pthread_cond_broadcast(&linHackerCanBoard);
-      pthread_cond_broadcast(&windowserCanBoard);
+      noHope = true; // zakomunikuj pozostałym, że już nie przepłyną
+      failInfo();
+      pthread_cond_broadcast(&linHackerCanBoard); // wybudzenie pozostałych
+      pthread_cond_broadcast(&windowserCanBoard); // wybudzenie pozostałych
     }
     else
       pthread_cond_wait(&linHackerCanBoard, &mainLock); // oczekiwanie możliwość wejścia
   }
   if (noHope)
+  {
     printf("%s#%d%s ", HACKER_COLOR, id, RESET_COLOR);
+    if (TEST) fprintf(fout, " %d", withState(id, 1));
+  }
   else if (iWillRow)
     boardAndRow(id, 1);
   else
@@ -167,6 +221,7 @@ void * windowserArrives(void * args)
     pthread_cond_signal(&windowserCanBoard); // wybudzenie 1 windowsera
     waitingWindowsers -= 3; // aktualizacja zmiennej
     iWillRow = true; // ostatni == ten wątek == będzie wiosłował
+    if (TEST) fprintf(fout, "1"); // początek łodki w pliku testowym
     pthread_cond_wait(&readyToRow, &mainLock); // oczekiwanie aż wsiądą do łódki
   }
   else if (waitingWindowsers >= 1 && waitingLinHackers >= 2) // można wypłynąć
@@ -178,30 +233,34 @@ void * windowserArrives(void * args)
     waitingWindowsers--; // aktualizacja zmiennej
     waitingLinHackers -= 2; // aktualizacja zmiennej
     iWillRow = true; // ostatni == ten wątek == będzie wiosłował
+    if (TEST) fprintf(fout, "1"); // początek łodki w pliku testowym
     pthread_cond_wait(&readyToRow, &mainLock); // oczekiwanie aż wsiądą do łódki
   }
   else // uśpienie
   {
     waitingWindowsers++;
-    // wypisywanie sytuacji "3 do 1"
+    // wypisywanie sytuacji "3 na 1"
     if (waitingLinHackers == 1 && waitingWindowsers == 3)
-      printf("%sAwaiting %s1%s Linux hacker and %s3%s Windowsers. Can't load the boat!%s\n",
-            WARNING_COLOR, HACKER_COLOR, WARNING_COLOR, WINDOWSER_COLOR, LIGHT_BLUE, RESET_COLOR);
+      printf("%sAwaiting 1 Linux hacker and 3 Windowsers. Can't load the boat!%s\n",
+            WARNING_COLOR, RESET_COLOR);
     if (waitingLinHackers == 3 && waitingWindowsers == 1)
-      printf("%sAwaiting %s3%s Linux hackers and %s1%s Windowser. Can't load the boat!%s\n",
-            WARNING_COLOR, HACKER_COLOR, WARNING_COLOR, WINDOWSER_COLOR, WARNING_COLOR, RESET_COLOR);
+      printf("%sAwaiting 3 Linux hackers and 1 Windowser. Can't load the boat!%s\n",
+            WARNING_COLOR, RESET_COLOR);
     if (programmersArrived == PROGNUM) // gdy ostatni, wybudzenie reszty
     {
-      noHope = true;
-      printf("%d programmers left on shore :( : ", (PROGNUM - 1) % 4 + 1);
-      pthread_cond_broadcast(&linHackerCanBoard);
-      pthread_cond_broadcast(&windowserCanBoard);
+      noHope = true; // zakomunikuj pozostałym, że już nie przepłyną
+      failInfo();
+      pthread_cond_broadcast(&linHackerCanBoard); // wybudzenie pozostałych
+      pthread_cond_broadcast(&windowserCanBoard); // wybudzenie pozostałych
     }
     else
       pthread_cond_wait(&windowserCanBoard, &mainLock); // oczekiwanie możliwość wejścia
   }
   if (noHope)
+  {
     printf("%s#%d%s ", WINDOWSER_COLOR, id, RESET_COLOR);
+    if (TEST) fprintf(fout, " %d", withState(id, 0));
+  }
   else if (iWillRow)
     boardAndRow(id, 0);
   else
@@ -216,7 +275,7 @@ void programmersRandomGenerator(int iter, int speed)
   int * id;
   for (int i = 0; i < iter; i++)
   {
-    random = rand() % (int)pow(10, speed);
+    random = rand() % (int)pow(2, speed);
     while (random-- >= 1);
     id = malloc(sizeof(int));
     *id = i;
@@ -233,12 +292,16 @@ void boardAndRow(int id, int type)
 {
   boarding = false;
   inBoat = 0;
+  boatsShipped++;
   printf("%s %d%s  /\n", type ? HACKER_COLOR : WINDOWSER_COLOR , id, RESET_COLOR);
+  printf("%sAwaiting hackers: %d, awaiting windowsers: %d%s\n",
+          BOAT_INFO_COLOR, waitingLinHackers, waitingWindowsers, RESET_COLOR);
+  if (TEST) fprintf(fout, " %d\n", withState(id, type));
   pthread_cond_broadcast(&boardingDone); // rozpoczęcie nowych naborów do łódki
   if (programmersArrived == PROGNUM && waitingLinHackers + waitingWindowsers > 0) // ostatni kurs
   {
     noHope = true; // zakomunikuj pozostałym, że już nie przepłyną
-    printf("%d programmers left on shore :( : ", (PROGNUM - 1) % 4 + 1);
+    failInfo();
     pthread_cond_broadcast(&linHackerCanBoard); // wybudzenie pozostałych
     pthread_cond_broadcast(&windowserCanBoard); // wybudzenie pozostałych
   }
@@ -252,4 +315,12 @@ void boardBoat(int id, int type)
   if (inBoat == 3)
     pthread_cond_signal(&readyToRow); // ostatni może zacząć wiosłować
   printf("%s %d %s | ", type ? HACKER_COLOR : WINDOWSER_COLOR, id, RESET_COLOR);
+  if (TEST) fprintf(fout, " %d", withState(id, type));
+}
+
+void failInfo()
+{
+  printf("%s___________________________________________%s\n", SUCCESS_COLOR, RESET_COLOR);
+  printf("%sFinished!\n%d programmers left on shore: %s", SUCCESS_COLOR, (PROGNUM - 1) % 4 + 1, RESET_COLOR);
+  if (TEST) fprintf(fout, "0 ");
 }
