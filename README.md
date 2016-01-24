@@ -3,8 +3,10 @@
 ## Problem przeprawy przez rzekę (*River crossing*)
 Pewna przeprawa przez rzekę dzielona jest zarówno przez linuxowych Hakerów, jak i pracowników Microsoftu. Do przeprawy używana jest łódka, która mieści tylko **czterech** programistów i zawsze płynie **w pełni** załadowana.
 Aby zagwarantować bezpieczeństwo programistów w łódce nie może dojść do następujących sytuacji:
+
 1. Trzech linuxowych hakerów przebywa w łódce z trzema pracownikami Microsoftu.
 2. Trzech pracowników Microsoftu przebywa w łódce z trzema linuxowymi Hakerami.
+3. 
 A particular river crossing is shared by both Linux Hackers and Microsoft employees.
 A boat is used to cross the river, but it only seats four people, and must always carry
 a full load. In order to guarantee the safety of the hackers, you cannot put three
