@@ -30,7 +30,7 @@ make compile
 ## Uruchamianie
 Program przyjmuje następujące parametry:
 ```Makefile
--s <wartość> # prędkość generowania programistów [0...12] (domyślnie 9)
+-s <wartość> # prędkość generowania programistów [(szybko) 0...12 (wolno)] (domyślnie 9)
 -p <wartość> # ilość programistów do wygenerowania [0...] (domyślnie 100)
 -t <wartość> # [0 lub 1] gdy 1 do pliku tekstowego drukuje raport do testów (domyślnie 0) 
 ```
@@ -46,6 +46,7 @@ lub
 ```Makefile
 ./riverCrossing -s 1 -p 300 -t 0
 ```
+**Uwaga**: warto uruchomić program z prędkością 1 (parametr: -s 1), aby zaobserwować kończenie działania programu i zwracaną informację.
 ## Testowanie
 Testowanie odbywa się za pomocą programu **_./tester_**. Komenda zbiorcza ```make test[nr]``` uruchamia program dla pewnych parametrów z zapisem raportu do pliku. Następnie **_./tester_** analizuje raport i drukuje podsumowanie poprawności na wyjście standardowe. Następnie raport jest kasowany.<br />
 Ponieważ działanie generatora programistów zależy od działania generatora liczb losowych, testy warto uruchomić kilkukrotnie. Przygotowano pięć testów.
