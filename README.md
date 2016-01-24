@@ -32,11 +32,19 @@ Program przyjmuje następujące parametry:
 ```Makefile
 -s <wartość> # prędkość generowania programistów [0...12] (domyślnie 9)
 -p <wartość> # ilość programistów do wygenerowania [0...] (domyślnie 100)
--t <wartość> # [0 lub 1] gdy 1 do pliku tekstowego drukuje raport do testów (domyślnie 1) 
+-t <wartość> # [0 lub 1] gdy 1 do pliku tekstowego drukuje raport do testów (domyślnie 0) 
 ```
-Przykładowe uruchomienie:
+Aby uruchomić program należy wykonać:
 ```Makefile
-./river
+make run # uruchomienie z domyślnymi parametrami (-s 9, -p 100, -t 0)
+```
+Aby uruchomić program z parametrami użytkownika:
+```Makefile
+make run ARGS="-s 1 -p 300 -t 0"
+```
+lub
+```Makefile
+./riverCrossing -s 1 -p 300 -t 0
 ```
 ## Testowanie
 ```Makefile
