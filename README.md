@@ -1,7 +1,6 @@
 # Pracownia P3 - Systemy Operacyjne
 
 ## Problem przeprawy przez rzekę (*River crossing*)
-```
 Pewna przeprawa przez rzekę jest dzielona zarówno przez linuxowych Hakerów, jak i 
 pracowników Microsoftu. Do przeprawy używana jest łódka, która mieści tylko **czterech**
 programistów i zawsze płynie **w pełni** załadowana.
@@ -25,6 +24,5 @@ hackers and employees should not wait if there are enough of them for a safe
 boatload. Your code should be clearly commented, in particular, you should comment
 each semaphore or condition variable operation to specify how correctness
 properties are preserved.
-```
 
 W przypadku, gdy uzna pan, że temat nie nadaje się na pracownię P3, chciałbym wybrać temat powłoki, który wysłał pan jako propozycję i którego opis znajduje się pod adresem: http://pages.cs.wisc.edu/~dusseau/Classes/CS537-F07/Projects/P1/p1.html.
