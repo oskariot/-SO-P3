@@ -72,4 +72,4 @@ make clean
 ```
 
 
-*Oskar Wieczorek,  24.01.2016*
+*oskarito,  24.01.2016*
